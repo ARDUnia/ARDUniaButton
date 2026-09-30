@@ -4,6 +4,17 @@ A lightweight, non-blocking Arduino library for physical push buttons.
 
 Designed in the same philosophy as **TTP223Row**: simple API, `begin()`, non-blocking `update()`, deterministic timing, no third-party dependencies, and compatibility with Arduino UNO, ESP8266 and ESP32.
 
+
+## Project
+
+**ARDUniaButton** is an open-source project from **ARDUnia**, created by **Hamidreza Milaninia**.
+
+- **ARDUnia:** https://ardunia.ir
+- **Hamidreza Milaninia:** https://hrmnia.com
+- **GitHub:** https://github.com/ARDUnia/ARDUniaButton
+
+ARDUnia develops open-source Arduino, IoT and embedded software projects with an emphasis on simple APIs, practical engineering and reliable implementation.
+
 ## Features
 
 - Non-blocking debounce using `millis()`
