@@ -218,6 +218,12 @@ The default configuration is directly compatible with Arduino UNO and other boar
 
 `INPUT_PULLDOWN` is accepted only when it is defined by the selected Arduino core.
 
+## Hardware Safety and Liability Disclaimer
+
+This project is provided **“as is”** for educational and experimental use. Building, wiring, modifying, or operating electronic hardware may cause damage to the board, display, other components, connected equipment, or property, and may cause injury. **The author accepts no responsibility for hardware damage, component failure, wiring mistakes, power-supply issues, or other losses resulting from assembling, modifying, or using this project. You build and use the hardware at your own risk.**
+
+Before applying power, verify all pin connections, voltage levels, current requirements, polarity, and the specifications of your particular boards and modules. Do not assume that every module sold under the same name has identical electrical requirements.
+
 ## License
 
 MIT
