@@ -1,5 +1,11 @@
 # ARDUniaButton
 
+[![Latest Release](https://img.shields.io/github/v/release/ARDUnia/ARDUniaButton?display_name=tag&sort=semver)](https://github.com/ARDUnia/ARDUniaButton/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Platform: Arduino](https://img.shields.io/badge/Platform-Arduino-00979D.svg?logo=arduino&logoColor=white)](https://www.arduino.cc/)
+[![Language: C++](https://img.shields.io/badge/Language-C%2B%2B-blue.svg)](https://isocpp.org/)
+[![Latest Release Date](https://img.shields.io/github/release-date/ARDUnia/ARDUniaButton)](https://github.com/ARDUnia/ARDUniaButton/releases/latest)
+
 A lightweight, non-blocking Arduino library for physical push buttons.
 
 Designed in the same philosophy as **TTP223Row**: simple API, `begin()`, non-blocking `update()`, deterministic timing, no third-party dependencies, and compatibility with Arduino UNO, ESP8266 and ESP32.
