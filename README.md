@@ -1,56 +1,49 @@
 # ARDUniaButton
 
+[![CI](https://github.com/ARDUnia/ARDUniaButton/actions/workflows/ci.yml/badge.svg)](https://github.com/ARDUnia/ARDUniaButton/actions/workflows/ci.yml)
 [![Latest Release](https://img.shields.io/github/v/release/ARDUnia/ARDUniaButton?display_name=tag&sort=semver)](https://github.com/ARDUnia/ARDUniaButton/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Arduino](https://img.shields.io/badge/Platform-Arduino-00979D.svg?logo=arduino&logoColor=white)](https://www.arduino.cc/)
 [![Language: C++](https://img.shields.io/badge/Language-C%2B%2B-blue.svg)](https://isocpp.org/)
-[![Latest Release Date](https://img.shields.io/github/release-date/ARDUnia/ARDUniaButton)](https://github.com/ARDUnia/ARDUniaButton/releases/latest)
 
 A lightweight, non-blocking Arduino library for physical push buttons.
 
-Designed in the same philosophy as **TTP223Row**: simple API, `begin()`, non-blocking `update()`, deterministic timing, no third-party dependencies, and compatibility with Arduino UNO, ESP8266 and ESP32.
-
-
-## Project
-
-**ARDUniaButton** is an open-source project from **ARDUnia**, created by **Hamidreza Milaninia**.
-
-- **ARDUnia:** https://ardunia.ir
-- **Hamidreza Milaninia:** https://hrmnia.com
-- **GitHub:** https://github.com/ARDUnia/ARDUniaButton
-
-ARDUnia develops open-source Arduino, IoT and embedded software projects with an emphasis on simple APIs, practical engineering and reliable implementation.
+ARDUniaButton provides a simple polling API and optional callbacks for debounced press/release events, single/double/multi-click detection, long presses, and repeat-while-held behavior. It uses `millis()`, requires no third-party dependencies, and avoids dynamic memory allocation.
 
 ## Features
 
 - Non-blocking debounce using `millis()`
-- Default wiring: digital pin -> button -> GND
-- Internal `INPUT_PULLUP` by default
-- Active-LOW or Active-HIGH logic
-- `INPUT`, `INPUT_PULLUP`, and `INPUT_PULLDOWN` where the selected Arduino core defines `INPUT_PULLDOWN`
-- Press / Release
-- Single click
-- Double click
-- Multi click
-- Long press
-- Hold state
-- Repeat while held
-- Configurable timing
-- Polling API
-- Callback API
-- No dynamic allocation
-- No third-party dependencies
-- Safe `millis()` elapsed-time comparisons
+- Default wiring: digital pin → button → GND, using `INPUT_PULLUP`
+- Active-LOW and Active-HIGH logic
+- `INPUT`, `INPUT_PULLUP`, and `INPUT_PULLDOWN` when the selected Arduino core defines it
+- Press and release events
+- Single, double, and multi-click detection
+- Long-press detection and held-state reporting
+- Configurable repeat delay and interval while held
+- Polling and callback APIs
+- Independent one-shot event flags
+- Safe elapsed-time comparisons across `millis()` rollover
+- No third-party dependencies or dynamic allocation
 
-## Basic wiring
+## Installation
 
-The default configuration is intended for a button connected between a digital pin and GND:
+### Arduino Library Manager
+
+Once ARDUniaButton is accepted into the Arduino Library Manager index, open **Tools → Manage Libraries…** (or **Sketch → Include Library → Manage Libraries…** in Arduino IDE 1.x), search for **ARDUniaButton**, and install it.
+
+### Install from ZIP
+
+Until the Library Manager listing is available, download the ZIP from the [GitHub repository](https://github.com/ARDUnia/ARDUniaButton), then select **Sketch → Include Library → Add .ZIP Library…** in Arduino IDE.
+
+## Wiring
+
+The default configuration expects a button connected between a digital GPIO pin and GND:
 
 ```text
 Arduino GPIO ----[ BUTTON ]---- GND
 ```
 
-No external pull-up resistor is required when using the default constructor because the internal pull-up is enabled.
+The internal pull-up is enabled by default, so no external pull-up resistor is required for this wiring.
 
 ## Basic usage
 
@@ -61,7 +54,9 @@ ARDUniaButton button(7); // INPUT_PULLUP, active LOW
 
 void setup() {
   Serial.begin(115200);
-  button.begin();
+  if (!button.begin()) {
+    Serial.println("Invalid button configuration");
+  }
 }
 
 void loop() {
@@ -70,29 +65,29 @@ void loop() {
   if (button.wasPressed()) Serial.println("Pressed");
   if (button.wasReleased()) Serial.println("Released");
   if (button.wasClicked()) Serial.println("Click");
-  if (button.wasDoubleClicked()) Serial.println("Double Click");
+  if (button.wasDoubleClicked()) Serial.println("Double click");
   if (button.wasMultiClicked()) {
-    Serial.print("Multi Click: ");
+    Serial.print("Multi click: ");
     Serial.println(button.clickCount());
   }
-  if (button.wasLongPressed()) Serial.println("Long Press");
+  if (button.wasLongPressed()) Serial.println("Long press");
   if (button.wasRepeated()) Serial.println("Repeat");
 }
 ```
 
-## Timing
+Call `update()` regularly from `loop()`. The library does not create its own timer or interrupt.
 
-Defaults:
+## Default timing
 
 | Setting | Default |
 |---|---:|
 | Debounce | 30 ms |
 | Long press | 1000 ms |
-| Double click window | 400 ms |
+| Double-click window | 400 ms |
 | Repeat initial delay | 500 ms |
 | Repeat interval | 100 ms |
 
-Configure before or after `begin()`:
+Configure timings with:
 
 ```cpp
 button.setDebounce(30);
@@ -101,135 +96,77 @@ button.setDoubleClickTime(400);
 button.setRepeat(500, 100);
 ```
 
+The setters return `true` when a value is accepted and `false` when it is outside the supported range.
+
 ## Event semantics
 
-`update()` must be called regularly from `loop()`.
+- `wasPressed()` and `wasReleased()` report debounced transitions.
+- `wasLongPressed()` fires once when the long-press threshold is reached.
+- `wasRepeated()` fires at the configured repeat interval after the repeat delay.
+- A long press is not counted as a click.
+- Click events are delayed until the double-click window expires so a second press can be detected.
+- The `wasXxx()` event flags are independent and remain available until the next call to `update()`.
+- `event()` returns the last event generated by the most recent `update()`. If several events occur during one update, use the individual `wasXxx()` flags to check them all.
+- `clickCount()` returns the count for a multi-click event; it is meaningful when `wasMultiClicked()` is true.
 
-Immediate events:
+## Callback API
 
-- `wasPressed()` is generated after a debounced press.
-- `wasReleased()` is generated after a debounced release.
-- `wasLongPressed()` is generated once when the long-press threshold is reached.
-- `wasRepeated()` is generated at the configured repeat interval while the button remains pressed.
-
-Click events are intentionally delayed until the double-click window expires. This is required to distinguish a single click from a double click.
-
-A long press is not counted as a click.
-
-The `wasXxx()` methods use independent one-shot flags. Therefore, if more than one event is generated during the same `update()`, querying the individual methods does not lose an event. `event()` returns the last event generated during that update.
-
-## Repeat
-
-Repeat is independent from the long-press event. By default it starts after 500 ms of continuous pressing and then repeats every 100 ms.
+Register callbacks before or after `begin()`:
 
 ```cpp
-button.setRepeat(500, 100);
-```
+button.onClick([]() {
+  Serial.println("Click");
+});
 
-The repeat callback receives an incrementing repeat count:
+button.onLongPress([]() {
+  Serial.println("Long press");
+});
 
-```cpp
 button.onRepeat([](uint8_t count) {
   Serial.println(count);
 });
 ```
 
-## Callbacks
+Supported callbacks are `onPress()`, `onRelease()`, `onClick()`, `onDoubleClick()`, `onMultiClick()`, `onLongPress()`, and `onRepeat()`.
 
-```cpp
-void setup() {
-  button.onClick([]() {
-    Serial.println("Click");
-  });
+## Active-HIGH input
 
-  button.onLongPress([]() {
-    Serial.println("Long press");
-  });
-
-  button.onRepeat([](uint8_t count) {
-    Serial.println(count);
-  });
-
-  button.begin();
-}
-```
-
-## Active-HIGH
-
-Active-HIGH input is also supported when the hardware provides an appropriate pull-down or external resistor:
+Active-HIGH input can be configured when the hardware provides an appropriate pull-down or external resistor:
 
 ```cpp
 ARDUniaButton button(7, INPUT, false);
 ```
 
-On Arduino UNO, the classic AVR core does not define `INPUT_PULLDOWN`. The library therefore does not reference that symbol unless the selected core provides it, so the library compiles correctly on UNO.
-
-## API
-
-### State
-
-```cpp
-button.isPressed();
-button.isReleased();
-button.isHeld();
-button.state();
-```
-
-### Events
-
-```cpp
-button.wasPressed();
-button.wasReleased();
-button.wasClicked();
-button.wasDoubleClicked();
-button.wasMultiClicked();
-button.wasLongPressed();
-button.wasRepeated();
-button.event();
-button.clickCount();
-```
-
-### Configuration
-
-```cpp
-button.setDebounce(30);
-button.setLongPressTime(1000);
-button.setDoubleClickTime(400);
-button.setRepeat(500, 100);
-```
-
-### Callbacks
-
-```cpp
-button.onPress(callback);
-button.onRelease(callback);
-button.onClick(callback);
-button.onDoubleClick(callback);
-button.onMultiClick(callback);
-button.onLongPress(callback);
-button.onRepeat(callback);
-```
+The classic Arduino AVR core used by Arduino UNO does not define `INPUT_PULLDOWN`. ARDUniaButton only references that symbol when the selected core defines it.
 
 ## Examples
 
-- `BasicUsage` — polling API and all major events
-- `Callbacks` — callback API
-- `VolumeControl` — practical repeat use for up/down controls
+- **BasicUsage** — polling API and the main events
+- **Callbacks** — callback-based event handling
+- **VolumeControl** — repeat behavior for up/down controls
 
 ## Compatibility
 
-The library uses only standard Arduino APIs and has no third-party dependencies.
+The library uses standard Arduino APIs and has no third-party dependencies. It is intended for Arduino-compatible cores that provide `Arduino.h`, `millis()`, `pinMode()`, and `digitalRead()`. Compatibility claims should be verified against the specific board core and version in use.
 
-The default configuration is directly compatible with Arduino UNO and other boards that provide `INPUT_PULLUP`.
+## Tests
 
-`INPUT_PULLDOWN` is accepted only when it is defined by the selected Arduino core.
+The host-side test suite simulates Arduino GPIO and time, including basic click, double-click, long-press, and repeat behavior. Run it from the repository root:
 
-## Hardware Safety and Liability Disclaimer
+```sh
+sh test/host/run_test.sh
+```
 
-This project is provided **“as is”** for educational and experimental use. Building, wiring, modifying, or operating electronic hardware may cause damage to the board, display, other components, connected equipment, or property, and may cause injury. **The author accepts no responsibility for hardware damage, component failure, wiring mistakes, power-supply issues, or other losses resulting from assembling, modifying, or using this project. You build and use the hardware at your own risk.**
+GitHub Actions runs the host tests and checks library metadata with Arduino Lint.
 
-Before applying power, verify all pin connections, voltage levels, current requirements, polarity, and the specifications of your particular boards and modules. Do not assume that every module sold under the same name has identical electrical requirements.
+## Project
+
+ARDUniaButton is an open-source project from **ARDUnia**, created by **Hamidreza Milaninia**.
+
+- **ARDUnia:** https://ardunia.ir
+- **Author:** https://hrmnia.com
+- **Repository:** https://github.com/ARDUnia/ARDUniaButton
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).
