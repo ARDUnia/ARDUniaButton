@@ -64,6 +64,40 @@ int main() {
   assert(b.wasLongPressed());
   assert(b.wasRepeated());
   release(b);
+  advance(b, 400);
+  assert(!b.wasClicked());
+
+  // Three short presses must produce a multi-click event with the full count.
+  press(b); release(b);
+  advance(b, 100);
+  press(b); release(b);
+  advance(b, 100);
+  press(b); release(b);
+  advance(b, 400);
+  assert(b.wasMultiClicked());
+  assert(b.clickCount() == 3);
+  assert(!b.wasClicked());
+  assert(!b.wasDoubleClicked());
+
+  // Reject timing values outside the documented ranges.
+  assert(!b.setDebounce(0));
+  assert(!b.setLongPressTime(50));
+  assert(!b.setDoubleClickTime(10));
+  assert(!b.setRepeat(10, 0));
+
+  // Active-HIGH mode should report a press when the input becomes HIGH.
+  g_level = LOW;
+  ARDUniaButton activeHigh(8, INPUT, false);
+  assert(activeHigh.isValid());
+  assert(activeHigh.begin());
+  g_level = HIGH;
+  advance(activeHigh, 1);
+  advance(activeHigh, 30);
+  assert(activeHigh.wasPressed());
+  g_level = LOW;
+  advance(activeHigh, 1);
+  advance(activeHigh, 30);
+  assert(activeHigh.wasReleased());
 
   std::cout << "ARDUniaButton host tests: PASS\n";
   return 0;
